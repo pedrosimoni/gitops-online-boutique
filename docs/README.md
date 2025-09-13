@@ -67,8 +67,7 @@ git clone [https://github.com/pedrosimoni/microservices-demo](https://github.com
 
 # Criação da estrutura e cópia do manifesto
 mkdir -p ./gitops-online-boutique/k8s
-# Copie a configuração de https://github.com/GoogleCloudPlatform/microservices-demo/blob/main/release/kubernetes-manifests.yaml
-vim ./gitops-online-boutique/k8s/online-boutique.yaml
+cp ./microservices-demo/release/kubernetes-manifests.yaml ./gitops-online-boutique/k8s/online-boutique.yaml
 
 # Inicialização e push para o novo repositório
 cd ./gitops-online-boutique
