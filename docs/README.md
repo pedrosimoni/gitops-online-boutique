@@ -179,10 +179,14 @@ spec:
 
 Após o `git push`, o ArgoCD detectou a alteração e, automaticamente, ajustou o `Deployment` no cluster, escalando o serviço para 3 pods, validando o ciclo de GitOps.
 
+![Teste Alteração](../img/synced.png)
+
 ```sh
 # Verificação após a alteração via Git
 kubectl get pods | grep recommendationservice
 ```
+
+![Teste Alteração Termial](../img/pods-more.png)
 
 ## 7. Conclusão
 

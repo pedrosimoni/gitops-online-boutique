@@ -33,7 +33,7 @@ To run a set of microservices (Online Boutique) in a local Kubernetes cluster (m
 ### 1.2. Technologies Used
 
 - **Kubernetes**: Container orchestrator for managing the application.
-- **Rancher Desktop**: Tool for running Kubernetes and containers locally.
+- **Rancher Desktop**: Tool to run containers locally.
 - **ArgoCD**: GitOps tool for Kubernetes.
 - **Docker**: Container engine.
 - **Git & GitHub**: Version control system and repository hosting platform.
@@ -41,7 +41,7 @@ To run a set of microservices (Online Boutique) in a local Kubernetes cluster (m
 
 ## 2. Environment Setup
 
-Before starting, it is necessary to ensure all tools are installed and configured.
+Before starting, it is necessary to ensure that all tools are installed and configured according to your OS.
 
 - **Rancher Desktop**: Installed with Kubernetes enabled.
 - **Git**: Installed on the system.
@@ -49,36 +49,34 @@ Before starting, it is necessary to ensure all tools are installed and configure
 
 To verify the connection to the cluster, the `kubectl get nodes` command should return the active node.
 
-```sh
+```h
 kubectl get nodes
 ```
-
-![Result of kubectl get nodes](../img/kubectl-get-nodes.png)
 
 ## 3. Git Repository Configuration (Source of Truth)
 
 The first step in the GitOps workflow is to define a repository that will contain the application's manifests.
 
 1.  **Fork the original repository**: A fork of the `GoogleCloudPlatform/microservices-demo` project was created.
-2.  **Create a new repository**: A new public repository (`gitops-online-boutique`) was created to store only the deployment manifest.
+2.  **Create a new repository**: This new public repository (`gitops-online-boutique`) was created to store the deployment manifest and the project documentation.
 3.  **Isolate the manifest**: The `release/kubernetes-manifests.yaml` file from the original project was copied to the new repository following the `k8s/online-boutique.yaml` structure.
 
 ```bash
 # Clone the fork
-git clone https://github.com/YOUR-GITHUB-USER/microservices-demo.git
-cd microservices-demo
+git clone https://github.com/pedrosimoni/microservices-demo
 
-# Create the directory structure and copy the manifest
-mkdir -p ../gitops-online-boutique/k8s
-cp release/kubernetes-manifests.yaml ../gitops-online-boutique/k8s/online-boutique.yaml
+# Create the structure and copy the manifest
+mkdir -p ./gitops-online-boutique/k8s
+# Copy the configuration from https://github.com/GoogleCloudPlatform/microservices-demo/blob/main/release/kubernetes-manifests.yaml
+vim ./gitops-online-boutique/k8s/online-boutique.yaml
 
 # Initialize and push to the new repository
-cd ../gitops-online-boutique
+cd ./gitops-online-boutique
 git init
 git add .
-git commit -m "feat: Add initial Online Boutique manifest"
+git commit -m "initial commit"
 git branch -M main
-git remote add origin https://github.com/YOUR-GITHUB-USER/gitops-online-boutique.git
+git remote add origin https://github.com/pedrosimoni/gitops-online-boutique.git
 git push -u origin main
 ```
 
@@ -105,6 +103,8 @@ To configure ArgoCD, we access its web interface.
     kubectl port-forward svc/argocd-server -n argocd 8080:443
     ```
 
+![Argo CD Running Terminal](../img/argo-term.png)
+
 2.  **Get the initial password**: The default user is `admin`, and the password is automatically generated.
     ```sh
     kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
@@ -125,11 +125,9 @@ With access to the ArgoCD interface, the application was created to connect the 
 
 The `Sync Policy` was set to `Automatic`, with the `Prune Resources` and `Self Heal` options enabled to ensure the cluster's state always reflects what is in Git.
 
-![Sync Policy Configuration](image_81941d.png)
-
 The tool for processing the manifests was kept as `Directory`, as the repository contains standard Kubernetes YAML files.
 
-![Directory Type Configuration](image_81410c.png)
+![Argo CD Running](../img/argo-dash.png)
 
 ## 6. Validation and Testing
 
@@ -141,11 +139,11 @@ The application's frontend service is of type `ClusterIP`, requiring it to be ex
 kubectl port-forward svc/frontend-external 9090:80
 ```
 
-![Port-forward output](image_813d08.png)
+![Online Boutique Running Terminal](../img/online-boutique-term.png)
 
 With the command running, the application became available at `http://localhost:9090`.
 
-![Online Boutique site running](../img/online-boutique-running.png)
+![Online Boutique Running](../img/online-boutique.png)
 
 ### 6.2. Verifying Pods
 
@@ -155,21 +153,40 @@ To ensure all microservices were deployed and are running, the following command
 kubectl get pods -n default
 ```
 
-![List of application pods](../img/kubectl-get-pods.png)
+![Pods Test](../img/pods-test.png)
 
 ### 6.3. (Optional) Testing the GitOps Flow
 
 To test the complete flow, the number of replicas for the `recommendationservice` was changed from 1 to 3 directly in the `k8s/online-boutique.yaml` file.
 
+yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommendationservice
+  labels:
+    app: recommendationservice
+spec:
+  replicas: 3 # <--- Added on line 185
+  selector:
+    matchLabels:
+      app: recommendationservice
+  template:
+    metadata:
+      labels:
+        app: recommendationservice
+
 After the `git push`, ArgoCD detected the change and automatically adjusted the `Deployment` in the cluster, scaling the service to 3 pods, thus validating the GitOps cycle.
+
+![Change Test](../img/synced.png)
 
 ```sh
 # Verification after the change via Git
 kubectl get pods | grep recommendationservice
 ```
 
-![Scaled recommendationservice pods](../img/scaled-pods.png)
+![Change Test Terminal](../img/pods-more.png)
 
 ## 7. Conclusion
 
-This project demonstrated in practice the efficiency of GitOps for managing applications in Kubernetes. By using Git as the single source of truth and ArgoCD as the synchronization agent, the deployment.
+This project demonstrated in practice the efficiency of GitOps for managing applications in Kubernetes. By using Git as the single source of truth and ArgoCD as the synchronization agent, the deployment process becomes declarative, automated, and fully traceable, aligning with the best practices of DevOps and Cloud-Native.
